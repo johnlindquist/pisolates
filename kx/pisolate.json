@@ -151,15 +151,18 @@
       "0.67.3"
     ],
     "requiredPiFlags": [
+      "--no-extensions",
+      "--no-skills",
+      "--no-prompt-templates",
+      "--no-themes",
+      "--no-context-files",
       "--tools",
       "--append-system-prompt",
       "--session-dir",
       "--no-session"
     ],
-    "optionalPiFlags": [
-      "--no-context-files"
-    ],
-    "notes": "This recipe intentionally runs in yolo/full-access mode: Pi tool allowlists are not passed, resource discovery is not disabled, the pisolates guard is not loaded, and target CLI docs are appended at startup."
+    "optionalPiFlags": [],
+    "notes": "This recipe intentionally runs in yolo/full-access mode for commands and built-in tools. Ambient Pi resource discovery is disabled, including global and cwd extensions, skills, prompt templates, themes, and context files. Target CLI docs are appended at startup from this recipe config."
   },
   "docs": [
     "cli-docs.md"

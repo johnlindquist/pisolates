@@ -49,8 +49,9 @@ docs=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d
 tools=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).tools.join(",")))')
 session=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).session))')
 yolo=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).yolo ? "1" : "0"))')
+caller_cwd=$(pwd)
 
-mkdir -p "$cwd" "$PISOLATES_HOME/pi-agent" "$PISOLATES_HOME/sessions/$name"
+mkdir -p "$cwd" "$PISOLATES_HOME/sessions/$name"
 policy_file="$PISOLATES_HOME/pisolates/$name/.policy-summary.md"
 mkdir -p "$(dirname "$policy_file")"
 {
@@ -63,7 +64,7 @@ export PISOLATE_NAME="$name"
 export PISOLATE_MODE="$mode_name"
 export PISOLATE_MANIFEST="$manifest"
 export PISOLATE_WORKING_ROOT="$cwd"
-export PI_CODING_AGENT_DIR="$PISOLATES_HOME/pi-agent/$name"
+export PISOLATE_CALLER_CWD="$caller_cwd"
 export NO_COLOR="${NO_COLOR:-1}"
 export BIRD_TIMEOUT_MS="${BIRD_TIMEOUT_MS:-15000}"
 export BIRD_COOKIE_TIMEOUT_MS="${BIRD_COOKIE_TIMEOUT_MS:-1000}"
@@ -85,10 +86,20 @@ fi
 set -- "$@"
 cd "$cwd"
 
+pi_help=$(pi --help 2>&1 || true)
+for flag in --no-extensions --no-skills --no-prompt-templates --no-themes --no-context-files; do
+  if ! printf '%s\n' "$pi_help" | grep -q -- "$flag"; then
+    echo "pisolates: installed pi does not support required isolation flag: $flag" >&2
+    exit 2
+  fi
+done
+resource_isolation_args="--no-extensions --no-skills --no-prompt-templates --no-themes --no-context-files"
+model_args="--model openai-codex/gpt-5.5"
+
 if [ "$yolo" = "1" ]; then
-  pi_args="--append-system-prompt $prompt"
+  pi_args="$resource_isolation_args $model_args --append-system-prompt $prompt"
 else
-  pi_args="--no-extensions --no-skills --no-prompt-templates --no-themes --tools $tools --append-system-prompt $prompt"
+  pi_args="$resource_isolation_args $model_args --tools $tools --append-system-prompt $prompt"
 fi
 if [ -n "$docs" ]; then
   while IFS= read -r doc; do
@@ -101,9 +112,6 @@ fi
 pi_args="$pi_args --append-system-prompt $policy_file"
 if [ "$yolo" != "1" ]; then
   pi_args="$pi_args -e $PISOLATES_HOME/installer/pi-guard.ts"
-fi
-if pi --help | grep -q -- "--no-context-files"; then
-  pi_args="--no-context-files $pi_args"
 fi
 
 if [ "$session" = "ephemeral" ]; then

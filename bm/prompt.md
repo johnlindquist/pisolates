@@ -12,6 +12,13 @@ Do not waste the user's turn rediscovering common Basic Memory commands. Use thi
 
 ## Common Workflows
 
+- Infer the user's current project before memory queries:
+  - The launcher sets `PISOLATE_CALLER_CWD` to the directory where `pi-bm` was invoked, before switching to `~/.pisolates/work/bm`.
+  - If the user asks about "this project", "my cwd", or names a repo/path such as `~/dev/script-kit-gpui`, resolve the Basic Memory project first.
+  - Use `bm tool list-projects --local` or `bm project list --json --local` to find matching project names and paths.
+  - Prefer an exact project-name match from the repo basename, for example `~/dev/script-kit-gpui` maps to `--project script-kit-gpui`.
+  - When a project is inferred, pass `--project PROJECT` on every `bm tool` command instead of querying the default project first.
+  - For ambiguous matches, run `bm project info PROJECT --json --local` on the best candidates and choose the one whose path matches the requested/caller cwd.
 - Search memories: `bm tool search-notes "query" --page-size 10`
 - Fuzzy or metadata search: `bm tool search-notes "query" --title --page-size 10`, `bm tool search-notes --tag tag`, `bm tool search-notes --type type`, `bm tool search-notes --meta key=value`
 - Read a note: `bm tool read-note IDENTIFIER`

@@ -7,7 +7,9 @@
 
 Pi is the agent substrate. Pisolates is the launcher, prompt, installer, and documentation layer around it.
 
-Current recipes intentionally run in yolo/full-access mode: Pi tool allowlists are not passed, resource discovery is not disabled, the pisolates guard is not loaded, command policy defaults to allow, path policy defaults to allow, and target CLI documentation is appended to the startup prompt.
+Current recipes intentionally run in yolo/full-access mode for commands and built-in tools: Pi tool allowlists are not passed, the pisolates guard is not loaded, command policy defaults to allow, path policy defaults to allow, target CLI documentation is appended to the startup prompt, and the default model is `openai-codex/gpt-5.5`. They reuse the user's normal Pi login/provider config, but disable ambient Pi resource discovery by default, including global and cwd extensions, extension-provided hooks, skills, prompt templates, themes, and context files.
+
+For the operating principles behind those defaults, see [Pisolates Manifesto](MANIFESTO.md).
 
 ## Install
 
@@ -63,10 +65,11 @@ Pi is not an OS sandbox. A pisolate narrows and documents the working directory,
 
 The first-wave launcher uses:
 
-- An isolated `PI_CODING_AGENT_DIR` under `~/.pisolates/pi-agent`.
 - Per-recipe session directories.
+- The user's normal Pi login/provider config, with `--model openai-codex/gpt-5.5` supplied by the launcher.
+- Disabled ambient Pi resource discovery: `--no-extensions`, `--no-skills`, `--no-prompt-templates`, `--no-themes`, and `--no-context-files`. This prevents global and cwd resource loading, including hooks that arrive through extensions. The launcher fails closed if the installed `pi` does not support any of these flags.
 - A generated policy summary in the prompt.
-- A shared Pi guard extension loaded with `-e installer/pi-guard.ts`.
+- A shared Pi guard extension loaded with `-e installer/pi-guard.ts` for non-yolo recipes.
 - A no-dependency command policy tester for local verification.
 
 Credential reuse is explicit. `pisolates doctor` reports auth presence, but install does not copy, symlink, or print tokens.
