@@ -45,8 +45,10 @@ esac
 plan=$("$json" plan "$manifest" "$mode_name")
 cwd=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).cwd))')
 prompt=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).prompt))')
+docs=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log((JSON.parse(s).docs||[]).join("\n")))')
 tools=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).tools.join(",")))')
 session=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).session))')
+yolo=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).yolo ? "1" : "0"))')
 
 mkdir -p "$cwd" "$PISOLATES_HOME/pi-agent" "$PISOLATES_HOME/sessions/$name"
 policy_file="$PISOLATES_HOME/pisolates/$name/.policy-summary.md"
@@ -83,7 +85,23 @@ fi
 set -- "$@"
 cd "$cwd"
 
-pi_args="--no-extensions --no-skills --no-prompt-templates --no-themes --tools $tools --append-system-prompt $prompt --append-system-prompt $policy_file -e $PISOLATES_HOME/installer/pi-guard.ts"
+if [ "$yolo" = "1" ]; then
+  pi_args="--append-system-prompt $prompt"
+else
+  pi_args="--no-extensions --no-skills --no-prompt-templates --no-themes --tools $tools --append-system-prompt $prompt"
+fi
+if [ -n "$docs" ]; then
+  while IFS= read -r doc; do
+    [ -n "$doc" ] || continue
+    pi_args="$pi_args --append-system-prompt $doc"
+  done <<EOF
+$docs
+EOF
+fi
+pi_args="$pi_args --append-system-prompt $policy_file"
+if [ "$yolo" != "1" ]; then
+  pi_args="$pi_args -e $PISOLATES_HOME/installer/pi-guard.ts"
+fi
 if pi --help | grep -q -- "--no-context-files"; then
   pi_args="--no-context-files $pi_args"
 fi

@@ -5,7 +5,9 @@
 - `pi-<tool>` for interactive Pi sessions.
 - `p-<tool>` for one-shot `pi --print` sessions.
 
-Pi is the agent substrate. Pisolates is the policy, launcher, prompt, installer, and documentation layer around it.
+Pi is the agent substrate. Pisolates is the launcher, prompt, installer, and documentation layer around it.
+
+Current recipes intentionally run in yolo/full-access mode: Pi tool allowlists are not passed, resource discovery is not disabled, the pisolates guard is not loaded, command policy defaults to allow, path policy defaults to allow, and target CLI documentation is appended to the startup prompt.
 
 ## Install
 
@@ -84,7 +86,7 @@ bm/
 
 Every substantial recipe needs an Oracle planning pass before implementation. The project-wide pass is recorded in recipe `oracle-plan.md` placeholders and the Oracle session `pisolates-pi-architectu`.
 
-Recipe manifests use `schemaVersion: 1`, explicit modes, required executables, command policy, smoke checks, and install conflict rules. Current recipes intentionally default to full CLI access unless a future recipe narrows itself.
+Recipe manifests use `schemaVersion: 1`, explicit modes, required executables, command policy, docs files, smoke checks, and install conflict rules. Current recipes intentionally default to full CLI/tool access unless a future recipe narrows itself.
 
 ## Current Recipes
 
@@ -93,6 +95,8 @@ Recipe manifests use `schemaVersion: 1`, explicit modes, required executables, c
 - `bird`: full-access Bird X/Twitter CLI Pi harness.
 - `kx`: full-access Karabiner config Pi harness.
 - `zx`: full-access zsh config Pi harness.
+
+Each recipe includes `cli-docs.md`, loaded into Pi at startup so the agent does not need to rediscover basic command syntax before acting.
 
 ## No Root Package Workspace
 

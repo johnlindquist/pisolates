@@ -27,7 +27,9 @@ function matches(rule: Rule, command: string) {
 
 function evaluateCommand(command: string) {
   const manifest = loadManifest();
-  if (command.includes("\n") || command.includes("\r")) return { allowed: false, reason: "multiline commands are denied" };
+  if (manifest.commandPolicy?.shell?.denyMultiline !== false && (command.includes("\n") || command.includes("\r"))) {
+    return { allowed: false, reason: "multiline commands are denied" };
+  }
   if (manifest.commandPolicy?.shell?.denyShellMetacharacters !== false && hasShellMetacharacters(command)) {
     return { allowed: false, reason: "shell metacharacters are denied" };
   }
@@ -48,13 +50,14 @@ function expandHome(value: string) {
 
 function evaluatePath(operation: "read" | "edit" | "write", targetPath: string) {
   const manifest = loadManifest();
+  const policy = manifest.pathPolicy || {};
+  if (policy.default === "allow" && policy.allowOutsideWorkingRoot === true) return { allowed: true, reason: "default path policy" };
   const cwd = process.env.PISOLATE_WORKING_ROOT || process.cwd();
   const resolved = path.resolve(cwd, expandHome(targetPath));
   const rel = path.relative(cwd, resolved);
   if (!rel || rel.startsWith("..") || path.isAbsolute(rel) || rel.includes("..")) {
     return { allowed: false, reason: "path outside working root" };
   }
-  const policy = manifest.pathPolicy || {};
   const exact = (candidate: string) => path.normalize(candidate) === rel;
   const inList = (items: any[] = []) => items.some((item) => exact(typeof item === "string" ? item : item.path));
   const denyList = [...(policy.generatedReadOnly || []), ...(policy.legacyReadOnly || []), ...(policy.sensitiveDenied || [])];

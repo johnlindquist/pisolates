@@ -24,12 +24,19 @@
       "pi": {
         "mode": "interactive",
         "tools": [
-          "bash"
+          "read",
+          "bash",
+          "edit",
+          "write",
+          "grep",
+          "find",
+          "ls"
         ],
         "session": "save",
         "promptMode": "append",
         "disableAmbientResources": true,
-        "disableContextFilesWhenSupported": true
+        "disableContextFilesWhenSupported": true,
+        "yolo": true
       }
     },
     "oneShot": {
@@ -41,12 +48,19 @@
       "pi": {
         "mode": "print",
         "tools": [
-          "bash"
+          "read",
+          "bash",
+          "edit",
+          "write",
+          "grep",
+          "find",
+          "ls"
         ],
         "session": "ephemeral",
         "promptMode": "append",
         "disableAmbientResources": true,
-        "disableContextFilesWhenSupported": true
+        "disableContextFilesWhenSupported": true,
+        "yolo": true
       }
     }
   },
@@ -118,6 +132,18 @@
     "optionalPiFlags": [
       "--no-context-files"
     ],
-    "notes": "This recipe intentionally defaults to full target-CLI access. Pisolates still provides isolated launcher/session/prompt structure, but command use is not curated."
+    "notes": "This recipe intentionally runs in yolo/full-access mode: Pi tool allowlists are not passed, resource discovery is not disabled, the pisolates guard is not loaded, and target CLI docs are appended at startup."
+  },
+  "docs": [
+    "cli-docs.md"
+  ],
+  "pathPolicy": {
+    "default": "allow",
+    "allowOutsideWorkingRoot": true,
+    "readable": [],
+    "editable": [],
+    "generatedReadOnly": [],
+    "legacyReadOnly": [],
+    "sensitiveDenied": []
   }
 }

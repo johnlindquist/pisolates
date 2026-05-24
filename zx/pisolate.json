@@ -18,13 +18,19 @@
       "pi": {
         "mode": "interactive",
         "tools": [
+          "read",
           "bash",
-          "edit"
+          "edit",
+          "write",
+          "grep",
+          "find",
+          "ls"
         ],
         "session": "save",
         "promptMode": "append",
         "disableAmbientResources": true,
-        "disableContextFilesWhenSupported": true
+        "disableContextFilesWhenSupported": true,
+        "yolo": true
       }
     },
     "oneShot": {
@@ -36,13 +42,19 @@
       "pi": {
         "mode": "print",
         "tools": [
+          "read",
           "bash",
-          "edit"
+          "edit",
+          "write",
+          "grep",
+          "find",
+          "ls"
         ],
         "session": "ephemeral",
         "promptMode": "append",
         "disableAmbientResources": true,
-        "disableContextFilesWhenSupported": true
+        "disableContextFilesWhenSupported": true,
+        "yolo": true
       }
     }
   },
@@ -67,55 +79,12 @@
   },
   "pathPolicy": {
     "default": "allow",
-    "readable": [
-      {
-        "path": "AGENTS.md",
-        "mustExist": false,
-        "reason": "repo agent rules"
-      },
-      {
-        "path": "CLAUDE.md",
-        "mustExist": false,
-        "reason": "repo development notes"
-      },
-      {
-        "path": "zsh/conf.d/49-codex-bare-dsl.zsh",
-        "mustExist": true,
-        "reason": "primary wrapper module"
-      },
-      {
-        "path": "zsh/tests/49-codex-bare-dsl-kx.zsh",
-        "mustExist": false,
-        "reason": "focused wrapper test example"
-      },
-      {
-        "path": "zsh/tests/49-codex-bare-dsl-zx.zsh",
-        "mustExist": true,
-        "reason": "focused zx wrapper test"
-      },
-      {
-        "path": "zsh/tests/startup-regression.zsh",
-        "mustExist": false,
-        "reason": "read-only startup regression reference"
-      }
-    ],
-    "editable": [
-      {
-        "path": "zsh/conf.d/49-codex-bare-dsl.zsh",
-        "mustExist": true,
-        "create": false,
-        "reason": "primary zx wrapper module"
-      },
-      {
-        "path": "zsh/tests/49-codex-bare-dsl-zx.zsh",
-        "mustExist": true,
-        "create": false,
-        "reason": "focused zx test"
-      }
-    ],
+    "readable": [],
+    "editable": [],
     "legacyReadOnly": [],
     "generatedReadOnly": [],
-    "sensitiveDenied": []
+    "sensitiveDenied": [],
+    "allowOutsideWorkingRoot": true
   },
   "commandPolicy": {
     "default": "allow",
@@ -175,6 +144,9 @@
     "optionalPiFlags": [
       "--no-context-files"
     ],
-    "notes": "This recipe intentionally defaults to full target-CLI access. Pisolates still provides isolated launcher/session/prompt structure, but command use is not curated."
-  }
+    "notes": "This recipe intentionally runs in yolo/full-access mode: Pi tool allowlists are not passed, resource discovery is not disabled, the pisolates guard is not loaded, and target CLI docs are appended at startup."
+  },
+  "docs": [
+    "cli-docs.md"
+  ]
 }

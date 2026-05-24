@@ -59,6 +59,9 @@ function validateManifest(file) {
   for (const rel of [manifest.prompt, manifest.readme || "README.md", manifest.oraclePlan || "oracle-plan.md"]) {
     if (rel && !fs.existsSync(path.join(dir, rel))) errors.push(`${file}: missing ${rel}`);
   }
+  for (const rel of manifest.docs || []) {
+    if (rel && !fs.existsSync(path.join(dir, rel))) errors.push(`${file}: missing docs file ${rel}`);
+  }
   const seen = new Map();
   for (const [mode, command] of manifestCommands(manifest)) {
     if (!/^(pi|p)-[a-z][a-z0-9-]*(-[a-z0-9-]+)?$/.test(command)) errors.push(`${file}: invalid command ${command}`);
@@ -92,8 +95,8 @@ function allRecipeDirs(root) {
 }
 
 function commandAllowed(manifest, command) {
-  if (command.includes("\n") || command.includes("\r")) return { allowed: false, reason: "multiline commands are denied" };
   const shell = manifest.commandPolicy?.shell || {};
+  if (shell.denyMultiline !== false && (command.includes("\n") || command.includes("\r"))) return { allowed: false, reason: "multiline commands are denied" };
   const denyMeta = shell.denyShellMetacharacters !== false;
   if (denyMeta && /[;&|`$<>]/.test(command)) return { allowed: false, reason: "shell metacharacters are denied" };
 
@@ -115,13 +118,14 @@ function commandAllowed(manifest, command) {
 
 function pathPolicy(manifest, operation, targetPath, cwdArg) {
   if (!targetPath || targetPath.includes("\0")) return { allowed: false, reason: "invalid path" };
+  const policy = manifest.pathPolicy || {};
+  if (policy.default === "allow" && policy.allowOutsideWorkingRoot === true) return { allowed: true, reason: "default path policy" };
   const cwd = path.resolve(expandHome(cwdArg || manifest.defaultRoot || process.cwd()));
   const resolved = path.resolve(cwd, expandHome(targetPath));
   const rel = path.relative(cwd, resolved);
   if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) return { allowed: false, reason: "path outside working root" };
   if (rel.includes("..")) return { allowed: false, reason: "path traversal is denied" };
 
-  const policy = manifest.pathPolicy || {};
   const exact = (candidate) => path.normalize(candidate) === rel;
   const inList = (items = []) => items.some((item) => exact(typeof item === "string" ? item : item.path));
   const denyList = [...(policy.generatedReadOnly || []), ...(policy.legacyReadOnly || []), ...(policy.sensitiveDenied || [])];
@@ -237,7 +241,9 @@ switch (cmd) {
       commands: mode.commands,
       cwd: expandHome(mode.cwd || manifest.defaultRoot),
       prompt: path.join(path.dirname(manifestFile), manifest.prompt),
+      docs: (manifest.docs || []).map((rel) => path.join(path.dirname(manifestFile), rel)),
       tools: mode.pi?.tools || [],
+      yolo: mode.pi?.yolo === true,
       session: mode.pi?.session,
       policy: mode.policy,
       defaultRoot: manifest.defaultRoot,

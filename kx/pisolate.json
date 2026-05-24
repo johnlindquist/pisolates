@@ -28,13 +28,19 @@
       "pi": {
         "mode": "interactive",
         "tools": [
+          "read",
           "bash",
-          "edit"
+          "edit",
+          "write",
+          "grep",
+          "find",
+          "ls"
         ],
         "session": "save",
         "promptMode": "append",
         "disableAmbientResources": true,
-        "disableContextFilesWhenSupported": true
+        "disableContextFilesWhenSupported": true,
+        "yolo": true
       }
     },
     "oneShot": {
@@ -46,13 +52,19 @@
       "pi": {
         "mode": "print",
         "tools": [
+          "read",
           "bash",
-          "edit"
+          "edit",
+          "write",
+          "grep",
+          "find",
+          "ls"
         ],
         "session": "ephemeral",
         "promptMode": "append",
         "disableAmbientResources": true,
-        "disableContextFilesWhenSupported": true
+        "disableContextFilesWhenSupported": true,
+        "yolo": true
       }
     }
   },
@@ -82,29 +94,12 @@
   },
   "pathPolicy": {
     "default": "allow",
-    "editable": [
-      {
-        "path": "kar-migration/config.ts",
-        "mustExist": true,
-        "create": false,
-        "reason": "Primary kx source file."
-      }
-    ],
-    "readable": [
-      "AGENTS.md",
-      "kar-migration/config.ts",
-      "kar-migration/types/index.ts",
-      "kar-migration/generated/manifest.json",
-      "kar-migration/generated/profile.generated.ts",
-      "kar-migration/generated/raw-rules.generated.ts",
-      "kar-migration/generated/raw-simple.generated.ts",
-      "kar-migration/reports/final-verification.md",
-      "kar-migration/reports/source-coverage.md",
-      "karabiner/karabiner.json"
-    ],
+    "editable": [],
+    "readable": [],
     "generatedReadOnly": [],
     "legacyReadOnly": [],
-    "sensitiveDenied": []
+    "sensitiveDenied": [],
+    "allowOutsideWorkingRoot": true
   },
   "commandPolicy": {
     "default": "allow",
@@ -164,6 +159,9 @@
     "optionalPiFlags": [
       "--no-context-files"
     ],
-    "notes": "This recipe intentionally defaults to full target-CLI access. Pisolates still provides isolated launcher/session/prompt structure, but command use is not curated."
-  }
+    "notes": "This recipe intentionally runs in yolo/full-access mode: Pi tool allowlists are not passed, resource discovery is not disabled, the pisolates guard is not loaded, and target CLI docs are appended at startup."
+  },
+  "docs": [
+    "cli-docs.md"
+  ]
 }
