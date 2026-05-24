@@ -100,7 +100,13 @@ install_shell_integration() {
   shell_file=${PISOLATES_SHELL_RC:-}
   if [ -z "$shell_file" ]; then
     case "${SHELL:-}" in
-      */zsh) shell_file="$HOME/.zshrc" ;;
+      */zsh)
+        if [ -n "${ZDOTDIR:-}" ]; then
+          shell_file="$ZDOTDIR/.zshrc"
+        else
+          shell_file="$HOME/.zshrc"
+        fi
+        ;;
       */bash) shell_file="$HOME/.bashrc" ;;
       *) shell_file="$HOME/.profile" ;;
     esac
