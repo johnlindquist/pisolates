@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "name": "zx",
+  "version": "0.2.0",
+  "description": "Scoped Pi harness for focused zsh wrapper/config work under ~/.config.",
+  "category": "config",
+  "prompt": "prompt.md",
+  "readme": "README.md",
+  "oraclePlan": "oracle-plan.md",
+  "defaultRoot": "~/.config",
+  "modes": {
+    "interactive": {
+      "kind": "interactive",
+      "commands": ["pi-zx"],
+      "policy": "scoped-edit",
+      "pi": { "mode": "interactive", "tools": ["bash", "edit"], "session": "save", "promptMode": "append", "disableAmbientResources": true, "disableContextFilesWhenSupported": true }
+    },
+    "oneShot": {
+      "kind": "one-shot",
+      "commands": ["p-zx"],
+      "policy": "scoped-edit",
+      "pi": { "mode": "print", "tools": ["bash", "edit"], "session": "ephemeral", "promptMode": "append", "disableAmbientResources": true, "disableContextFilesWhenSupported": true }
+    }
+  },
+  "requires": {
+    "executables": [
+      { "name": "pi", "command": "pi", "versionCommand": "pi --version" },
+      { "name": "zsh", "command": "zsh", "versionCommand": "zsh --version" },
+      { "name": "git", "command": "git", "versionCommand": "git --version" }
+    ]
+  },
+  "pathPolicy": {
+    "default": "deny",
+    "readable": [
+      { "path": "AGENTS.md", "mustExist": false, "reason": "repo agent rules" },
+      { "path": "CLAUDE.md", "mustExist": false, "reason": "repo development notes" },
+      { "path": "zsh/conf.d/49-codex-bare-dsl.zsh", "mustExist": true, "reason": "primary wrapper module" },
+      { "path": "zsh/tests/49-codex-bare-dsl-kx.zsh", "mustExist": false, "reason": "focused wrapper test example" },
+      { "path": "zsh/tests/49-codex-bare-dsl-zx.zsh", "mustExist": true, "reason": "focused zx wrapper test" },
+      { "path": "zsh/tests/startup-regression.zsh", "mustExist": false, "reason": "read-only startup regression reference" }
+    ],
+    "editable": [
+      { "path": "zsh/conf.d/49-codex-bare-dsl.zsh", "mustExist": true, "create": false, "reason": "primary zx wrapper module" },
+      { "path": "zsh/tests/49-codex-bare-dsl-zx.zsh", "mustExist": true, "create": false, "reason": "focused zx test" }
+    ],
+    "legacyReadOnly": [
+      "zsh/.zshrc",
+      "zsh/local.zsh",
+      "zsh/install.sh",
+      "zsh/conf.d/10-aliases.zsh",
+      "zsh/conf.d/12-editor-file-dsl.zsh",
+      "zsh/conf.d/17-project-scaffold-dsl.zsh",
+      "zsh/conf.d/19-media-recording-dsl.zsh",
+      "zsh/conf.d/40-ai.zsh",
+      "zsh/conf.d/46-ai-swarm-oracle-dsl.zsh",
+      "zsh/tests/10-aliases-modules.zsh",
+      "zsh/tests/startup-regression.zsh"
+    ],
+    "generatedReadOnly": ["zsh/.cache", "zsh/conf.d/.xorloop-sessions"],
+    "sensitiveDenied": ["zsh/conf.d/00-secrets.zsh", "zsh/codex-env.zsh", "zsh/local.zsh", "zsh/history"]
+  },
+  "commandPolicy": {
+    "default": "deny",
+    "shell": { "denyShellMetacharacters": true, "denyMultiline": true, "allowPipes": false, "allowRedirects": false },
+    "allowed": [
+      { "id": "pwd", "matchType": "exact", "match": "pwd", "kind": "diagnostic", "reason": "Confirms the scoped working root." },
+      { "id": "command-v-zsh", "matchType": "exact", "match": "command -v zsh", "kind": "diagnostic", "reason": "Reports the zsh executable used for syntax checks." },
+      { "id": "zsh-version", "match": "^zsh (--help|--version)$", "kind": "diagnostic", "reason": "Shows zsh help/version only." },
+      { "id": "git-status-focused", "matchType": "exact", "match": "git status --short -- AGENTS.md CLAUDE.md zsh", "kind": "read", "reason": "Reports focused zsh dirty state before edits." },
+      { "id": "git-diff-focused", "matchType": "exact", "match": "git diff -- zsh/conf.d/49-codex-bare-dsl.zsh zsh/tests/49-codex-bare-dsl-zx.zsh", "kind": "read", "reason": "Shows diff only for zx editable files." },
+      { "id": "git-diff-check-focused", "matchType": "exact", "match": "git diff --check -- zsh/conf.d/49-codex-bare-dsl.zsh zsh/tests/49-codex-bare-dsl-zx.zsh", "kind": "test", "reason": "Checks whitespace only on zx editable files." },
+      { "id": "list-zsh-conf", "matchType": "exact", "match": "find zsh/conf.d -maxdepth 1 -type f -name '*.zsh'", "kind": "read", "reason": "Lists top-level zsh modules only." },
+      { "id": "list-zsh-tests", "matchType": "exact", "match": "find zsh/tests -maxdepth 1 -type f -name '*.zsh'", "kind": "read", "reason": "Lists top-level zsh tests only." },
+      { "id": "cat-focused-context", "match": "^/bin/cat (AGENTS\\.md|CLAUDE\\.md|zsh/conf\\.d/49-codex-bare-dsl\\.zsh|zsh/tests/49-codex-bare-dsl-(kx|zx)\\.zsh|zsh/tests/startup-regression\\.zsh)$", "kind": "read", "reason": "Reads exact focused context files only." },
+      { "id": "rg-focused-context", "match": "^rg -n --no-heading -- [A-Za-z0-9_./:-]+ (zsh/conf\\.d/49-codex-bare-dsl\\.zsh|zsh/tests/49-codex-bare-dsl-(kx|zx)\\.zsh|zsh/tests/startup-regression\\.zsh)( (zsh/conf\\.d/49-codex-bare-dsl\\.zsh|zsh/tests/49-codex-bare-dsl-(kx|zx)\\.zsh|zsh/tests/startup-regression\\.zsh))*$", "kind": "read", "reason": "Allows targeted searches only in focused zsh files." },
+      { "id": "zsh-n-focused", "match": "^zsh -n zsh/(conf\\.d/49-codex-bare-dsl\\.zsh|tests/49-codex-bare-dsl-zx\\.zsh)$", "kind": "test", "reason": "Runs syntax checks only on focused files." },
+      { "id": "zsh-focused-wrapper-test", "matchType": "exact", "match": "zsh -f zsh/tests/49-codex-bare-dsl-zx.zsh", "kind": "test", "reason": "Runs the focused zx test with stubs." }
+    ],
+    "denied": [
+      { "id": "git-mutation", "match": "^git (add|am|apply|bisect|branch|checkout|cherry-pick|clean|commit|merge|mv|pull|push|rebase|reset|restore|revert|rm|stash|switch|tag|worktree)(\\s|$)", "kind": "write", "reason": "zx must not mutate git state." },
+      { "id": "destructive-filesystem", "match": "^(rm|mv|cp|chmod|chown|mkdir|rmdir|touch|ln|install|truncate|dd|tee)(\\s|$)", "kind": "write", "reason": "zx first release edits only through Pi edit on exact target files." },
+      { "id": "interpreters-installers", "match": "^(node|python|python3|perl|ruby|bun|pnpm|npm|npx|yarn|pip|pip3|cargo|go|brew)(\\s|$)", "kind": "execute", "reason": "Package managers and general interpreters are out of scope for zx first release." },
+      { "id": "agent-runners", "match": "^(codex|claude|gemini|oracle|pi|p-[a-z0-9-]+|pi-[a-z0-9-]+)(\\s|$)", "kind": "execute", "reason": "zx tests must stub agents and must not launch real long-running agents." },
+      { "id": "env-leak", "match": "^(env|printenv|set|typeset|export)(\\s|$)", "kind": "read", "reason": "Environment dumps can leak credentials." },
+      { "id": "sensitive-reads", "match": "^/bin/cat (zsh/conf\\.d/00-secrets\\.zsh|zsh/codex-env\\.zsh|zsh/local\\.zsh|zsh/history)(\\s|$)", "kind": "read", "reason": "Secrets, local overrides, history, and auth config are not zx context." },
+      { "id": "startup-regression-run", "match": "^zsh( -[A-Za-z]*)? zsh/tests/startup-regression\\.zsh$|^zsh -i(\\s|$)", "kind": "test", "reason": "Full startup regression is manual/explicit only in the first release." }
+    ],
+    "writeCommands": [],
+    "destructiveCommands": [],
+    "sensitivePaths": [
+      { "path": "~/.config/zsh/conf.d/00-secrets.zsh", "policy": "deny", "reason": "secret-bearing shell config" },
+      { "path": "~/.config/zsh/codex-env.zsh", "policy": "deny", "reason": "Codex/auth environment config" },
+      { "path": "~/.config/zsh/local.zsh", "policy": "deny", "reason": "local machine overrides" },
+      { "path": "~/.config/zsh/history", "policy": "deny", "reason": "shell history is private" },
+      { "path": "~/.codex", "policy": "deny", "reason": "Codex auth/config must not be read or printed" },
+      { "path": "~/.config/pi", "policy": "deny", "reason": "Pi auth/config must not be read or printed" }
+    ],
+    "nonInteractiveConfirmation": "block"
+  },
+  "install": { "conflictPolicy": "overwrite-managed-only", "linkStrategy": "copy", "shellIntegration": "ask" },
+  "smokeChecks": [
+    { "name": "policy allows pwd", "command": "scripts/test-command-policy zx 'pwd'", "expectExit": 0 },
+    { "name": "policy allows focused syntax check", "command": "scripts/test-command-policy zx 'zsh -n zsh/conf.d/49-codex-bare-dsl.zsh'", "expectExit": 0 },
+    { "name": "policy denies real codex", "command": "scripts/test-command-policy zx 'codex exec hello'", "expectExit": 1 },
+    { "name": "path allows primary module edit", "command": "scripts/test-path-policy zx edit zsh/conf.d/49-codex-bare-dsl.zsh", "expectExit": 0 },
+    { "name": "path denies zshrc edit", "command": "scripts/test-path-policy zx edit zsh/.zshrc", "expectExit": 1 }
+  ],
+  "compat": { "minPiVersion": "0.67.3", "testedPiVersions": ["0.67.3"], "requiredPiFlags": ["--tools", "--append-system-prompt", "--session-dir", "--no-session"], "optionalPiFlags": ["--no-context-files"] }
+}

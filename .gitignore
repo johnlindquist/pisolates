@@ -1,0 +1,8 @@
+.DS_Store
+.packx_cache/
+node_modules/
+receipts/*.local.md
+receipts/*.local.json
+*.log
+!.goals/
+!.goals/recipes.md

@@ -1,0 +1,21 @@
+{
+  "$id": "pisolate.schema.json",
+  "title": "Pisolates recipe manifest",
+  "type": "object",
+  "required": ["schemaVersion", "name", "version", "description", "category", "prompt", "modes", "requires", "commandPolicy", "install", "smokeChecks", "compat"],
+  "additionalProperties": true,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "version": { "type": "string" },
+    "description": { "type": "string" },
+    "category": { "type": "string" },
+    "prompt": { "type": "string" },
+    "modes": { "type": "object" },
+    "requires": { "type": "object" },
+    "commandPolicy": { "type": "object" },
+    "install": { "type": "object" },
+    "smokeChecks": { "type": "array" },
+    "compat": { "type": "object" }
+  }
+}

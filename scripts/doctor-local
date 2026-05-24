@@ -1,0 +1,37 @@
+#!/bin/sh
+set -eu
+repo=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+name=${1:-}
+
+echo "pisolates doctor"
+echo "repo: $repo"
+echo "home: ${PISOLATES_HOME:-$HOME/.pisolates}"
+
+if command -v pi >/dev/null 2>&1; then
+  pi_version=$(pi --version 2>&1 | head -1 || echo unknown)
+  pi_help=$(pi --help 2>&1 || true)
+  echo "pi: $(command -v pi) ($pi_version)"
+  if printf '%s\n' "$pi_help" | grep -q -- "--no-context-files"; then
+    echo "pi flag --no-context-files: present"
+  else
+    echo "pi flag --no-context-files: absent"
+  fi
+else
+  echo "pi: missing"
+fi
+
+if [ -d "$repo/pisolates" ]; then
+  "$repo/installer/json.mjs" validate "$repo/pisolates"
+else
+  "$repo/scripts/validate-manifests"
+fi
+
+if [ -n "$name" ]; then
+  manifest="$repo/$name/pisolate.json"
+  [ -f "$manifest" ] || manifest="${PISOLATES_HOME:-$HOME/.pisolates}/pisolates/$name/pisolate.json"
+  [ -f "$manifest" ] || {
+    echo "recipe: missing $name" >&2
+    exit 2
+  }
+  "$repo/installer/json.mjs" summary-policy "$manifest"
+fi

@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+cmd=${1:-}
+[ -n "$cmd" ] || {
+  echo "usage: cli-help-capture <command>" >&2
+  exit 2
+}
+"$cmd" --help

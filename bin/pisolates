@@ -1,0 +1,198 @@
+#!/bin/sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ -d "$script_dir/../installer" ]; then
+  REPO_ROOT=$(CDPATH= cd -- "$script_dir/.." && pwd)
+else
+  REPO_ROOT=${PISOLATES_SOURCE:-${PISOLATES_HOME:-$HOME/.pisolates}/source}
+fi
+PISOLATES_HOME=${PISOLATES_HOME:-$HOME/.pisolates}
+JSON="$REPO_ROOT/installer/json.mjs"
+
+die() {
+  echo "pisolates: $*" >&2
+  exit 1
+}
+
+usage() {
+  cat <<'EOF'
+Usage: pisolates <command> [args]
+
+Commands:
+  list [--installed]          List local or installed pisolates
+  validate all                Validate manifests
+  install <name...> [flags]   Install selected pisolates
+  uninstall <name...>         Remove installed launchers and state
+  doctor [name]               Check framework or one recipe
+  policy-test <name> <cmd>    Test a recipe command policy
+  run <name> <mode> [args...] Run a pisolate
+EOF
+}
+
+copy_file() {
+  src=$1
+  dst=$2
+  mkdir -p "$(dirname "$dst")"
+  cp "$src" "$dst"
+}
+
+copy_dir() {
+  src=$1
+  dst=$2
+  rm -rf "$dst"
+  mkdir -p "$dst"
+  (cd "$src" && find . -type d -exec mkdir -p "$dst/{}" \; && find . -type f -exec cp "{}" "$dst/{}" \;)
+}
+
+recipe_dir() {
+  name=$1
+  if [ -f "$REPO_ROOT/$name/pisolate.json" ]; then
+    printf '%s/%s\n' "$REPO_ROOT" "$name"
+  elif [ -f "$PISOLATES_HOME/pisolates/$name/pisolate.json" ]; then
+    printf '%s/pisolates/%s\n' "$PISOLATES_HOME" "$name"
+  else
+    return 1
+  fi
+}
+
+render_launcher() {
+  name=$1
+  mode=$2
+  command=$3
+  dst="$PISOLATES_HOME/bin/$command"
+  if [ -e "$dst" ] && ! grep -q "pisolates-managed: name=$name " "$dst" 2>/dev/null; then
+    die "$dst exists and is not managed by pisolates"
+  fi
+  cat > "$dst" <<EOF
+#!/bin/sh
+# pisolates-managed: name=$name mode=$mode command=$command
+PISOLATES_HOME="\${PISOLATES_HOME:-\$HOME/.pisolates}"
+exec "\$PISOLATES_HOME/installer/run-pisolate" "$name" "$mode" "\$@"
+EOF
+  chmod +x "$dst"
+}
+
+install_framework() {
+  mkdir -p "$PISOLATES_HOME/bin" "$PISOLATES_HOME/installer" "$PISOLATES_HOME/pisolates" "$PISOLATES_HOME/scripts" "$PISOLATES_HOME/schema" "$PISOLATES_HOME/shell" "$PISOLATES_HOME/work" "$PISOLATES_HOME/sessions"
+  copy_file "$REPO_ROOT/bin/pisolates" "$PISOLATES_HOME/bin/pisolates"
+  chmod +x "$PISOLATES_HOME/bin/pisolates"
+  for file in "$REPO_ROOT"/installer/*; do
+    [ -f "$file" ] || continue
+    copy_file "$file" "$PISOLATES_HOME/installer/$(basename "$file")"
+  done
+  for file in "$REPO_ROOT"/scripts/*; do
+    [ -f "$file" ] || continue
+    copy_file "$file" "$PISOLATES_HOME/scripts/$(basename "$file")"
+  done
+  for file in "$REPO_ROOT"/schema/*; do
+    [ -f "$file" ] || continue
+    copy_file "$file" "$PISOLATES_HOME/schema/$(basename "$file")"
+  done
+  chmod +x "$PISOLATES_HOME/installer/run-pisolate" 2>/dev/null || true
+  chmod +x "$PISOLATES_HOME/scripts/"* 2>/dev/null || true
+  printf 'export PATH="$HOME/.pisolates/bin:$PATH"\n' > "$PISOLATES_HOME/shell/env.sh"
+  printf 'export PATH="$HOME/.pisolates/bin:$PATH"\n' > "$PISOLATES_HOME/shell/env.zsh"
+  [ -f "$PISOLATES_HOME/state.json" ] || "$JSON" state-init "$PISOLATES_HOME" > "$PISOLATES_HOME/state.json"
+}
+
+install_recipe() {
+  name=$1
+  src=$(recipe_dir "$name") || die "unknown pisolate: $name"
+  copy_dir "$src" "$PISOLATES_HOME/pisolates/$name"
+  commands=$("$JSON" manifest-commands "$PISOLATES_HOME/pisolates/$name/pisolate.json")
+  printf '%s\n' "$commands" | while IFS='	' read -r mode command; do
+    [ -n "$mode" ] || continue
+    render_launcher "$name" "$mode" "$command"
+  done
+  "$JSON" state-install "$PISOLATES_HOME/state.json" "$PISOLATES_HOME" "$PISOLATES_HOME/pisolates/$name/pisolate.json" > "$PISOLATES_HOME/state.json.tmp"
+  mv "$PISOLATES_HOME/state.json.tmp" "$PISOLATES_HOME/state.json"
+}
+
+uninstall_recipe() {
+  name=$1
+  manifest="$PISOLATES_HOME/pisolates/$name/pisolate.json"
+  [ -f "$manifest" ] || die "$name is not installed"
+  "$JSON" manifest-commands "$manifest" | while IFS='	' read -r _mode command; do
+    [ -n "$command" ] || continue
+    rm -f "$PISOLATES_HOME/bin/$command"
+  done
+  rm -rf "$PISOLATES_HOME/pisolates/$name"
+  "$JSON" state-uninstall "$PISOLATES_HOME/state.json" "$name" > "$PISOLATES_HOME/state.json.tmp"
+  mv "$PISOLATES_HOME/state.json.tmp" "$PISOLATES_HOME/state.json"
+}
+
+cmd=${1:-}
+[ -n "$cmd" ] || { usage; exit 0; }
+shift || true
+
+case "$cmd" in
+  list)
+    if [ "${1:-}" = "--installed" ]; then
+      "$JSON" state-list "$PISOLATES_HOME/state.json"
+    else
+      "$JSON" list-recipes "$REPO_ROOT"
+    fi
+    ;;
+  validate)
+    [ "${1:-}" = "all" ] || die "usage: pisolates validate all"
+    "$JSON" validate "$REPO_ROOT"
+    ;;
+  install)
+    install_framework
+    names=""
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --pisolate)
+          shift
+          [ "$#" -gt 0 ] || die "--pisolate requires a name"
+          names="$names $1"
+          ;;
+        --yes|--no-shell|--no-auth-symlink)
+          ;;
+        --*)
+          die "unknown install flag: $1"
+          ;;
+        *)
+          names="$names $1"
+          ;;
+      esac
+      shift || true
+    done
+    [ -n "$names" ] || die "install requires at least one pisolate"
+    for name in $names; do
+      install_recipe "$name"
+      echo "installed $name"
+    done
+    echo "PATH helper: . \"$PISOLATES_HOME/shell/env.sh\""
+    ;;
+  uninstall)
+    [ "$#" -gt 0 ] || die "uninstall requires at least one pisolate"
+    for name in "$@"; do
+      uninstall_recipe "$name"
+      echo "uninstalled $name"
+    done
+    ;;
+  doctor)
+    "$REPO_ROOT/scripts/doctor-local" "$@"
+    ;;
+  policy-test)
+    [ "$#" -ge 2 ] || die "usage: pisolates policy-test <name> <command>"
+    name=$1
+    shift
+    "$REPO_ROOT/scripts/test-command-policy" "$name" "$*"
+    ;;
+  run)
+    [ "$#" -ge 2 ] || die "usage: pisolates run <name> <mode> [args...]"
+    name=$1
+    mode=$2
+    shift 2
+    exec "$REPO_ROOT/installer/run-pisolate" "$name" "$mode" "$@"
+    ;;
+  help|-h|--help)
+    usage
+    ;;
+  *)
+    die "unknown command: $cmd"
+    ;;
+esac

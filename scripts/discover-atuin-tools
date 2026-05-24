@@ -1,0 +1,13 @@
+#!/bin/sh
+set -eu
+limit=${1:-200}
+if ! command -v atuin >/dev/null 2>&1; then
+  echo "atuin not found" >&2
+  exit 1
+fi
+atuin history list --limit "$limit" 2>/dev/null |
+  awk '{print $2}' |
+  sed 's/[;&|].*$//' |
+  sort |
+  uniq -c |
+  sort -nr

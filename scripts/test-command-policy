@@ -1,0 +1,19 @@
+#!/bin/sh
+set -eu
+repo=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+name=${1:-}
+command=${2:-}
+[ -n "$name" ] && [ -n "$command" ] || {
+  echo "usage: test-command-policy <name> <command>" >&2
+  exit 2
+}
+manifest="$repo/$name/pisolate.json"
+[ -f "$manifest" ] || manifest="${PISOLATES_HOME:-$HOME/.pisolates}/pisolates/$name/pisolate.json"
+[ -f "$manifest" ] || {
+  echo "missing manifest: $name" >&2
+  exit 2
+}
+if [ -f "$repo/installer/json.mjs" ]; then
+  exec "$repo/installer/json.mjs" policy "$manifest" "$command"
+fi
+exec "${PISOLATES_HOME:-$HOME/.pisolates}/installer/json.mjs" policy "$manifest" "$command"

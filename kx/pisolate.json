@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "name": "kx",
+  "version": "0.1.0",
+  "description": "Scoped Pi harness for editing Karabiner kar config.ts with dry-run verification.",
+  "category": "config",
+  "prompt": "prompt.md",
+  "readme": "README.md",
+  "oraclePlan": "oracle-plan.md",
+  "defaultRoot": "~/.config",
+  "targetCli": {
+    "name": "kar",
+    "preferredPath": "~/.local/bin/kar",
+    "resolve": "path",
+    "helpCommand": "kar --help"
+  },
+  "env": {
+    "KX_CONFIG_ROOT": "~/.config",
+    "KX_KAR_CONFIG": "~/.config/kar-migration/config.ts"
+  },
+  "modes": {
+    "interactive": {
+      "kind": "interactive",
+      "commands": ["pi-kx"],
+      "policy": "scoped-config-edit",
+      "pi": { "mode": "interactive", "tools": ["bash", "edit"], "session": "save", "promptMode": "append", "disableAmbientResources": true, "disableContextFilesWhenSupported": true }
+    },
+    "oneShot": {
+      "kind": "one-shot",
+      "commands": ["p-kx"],
+      "policy": "scoped-config-edit",
+      "pi": { "mode": "print", "tools": ["bash", "edit"], "session": "ephemeral", "promptMode": "append", "disableAmbientResources": true, "disableContextFilesWhenSupported": true }
+    }
+  },
+  "requires": {
+    "executables": [
+      { "name": "pi", "command": "pi", "versionCommand": "pi --version" },
+      { "name": "kar", "command": "kar", "versionCommand": "kar --help" },
+      { "name": "rg", "command": "rg", "versionCommand": "rg --version" },
+      { "name": "git", "command": "git", "versionCommand": "git --version" }
+    ]
+  },
+  "pathPolicy": {
+    "default": "deny",
+    "editable": [
+      { "path": "kar-migration/config.ts", "mustExist": true, "create": false, "reason": "Primary kx source file." }
+    ],
+    "readable": [
+      "AGENTS.md",
+      "kar-migration/config.ts",
+      "kar-migration/types/index.ts",
+      "kar-migration/generated/manifest.json",
+      "kar-migration/generated/profile.generated.ts",
+      "kar-migration/generated/raw-rules.generated.ts",
+      "kar-migration/generated/raw-simple.generated.ts",
+      "kar-migration/reports/final-verification.md",
+      "kar-migration/reports/source-coverage.md",
+      "karabiner/karabiner.json"
+    ],
+    "generatedReadOnly": [
+      "karabiner/karabiner.json",
+      "kar-migration/generated/profile.generated.ts",
+      "kar-migration/generated/raw-rules.generated.ts",
+      "kar-migration/generated/raw-simple.generated.ts"
+    ],
+    "legacyReadOnly": [
+      "karabiner.edn",
+      "kar-migration/migration-source/karabiner.edn.readonly",
+      "kar-migration/migration-source/karabiner.edn.sha256",
+      "kar-migration/migration-source/karabiner.goku-baseline.json"
+    ],
+    "sensitiveDenied": [".ssh", "op", "gh", "bird", "zsh", "fish", "npm", "pnpm", "karabiner/assets", "karabiner/automatic_backups"]
+  },
+  "commandPolicy": {
+    "default": "deny",
+    "shell": { "denyShellMetacharacters": true, "denyMultiline": true, "allowPipes": false, "allowRedirects": false },
+    "allowed": [
+      { "id": "pwd", "match": "^pwd$", "kind": "diagnostic", "reason": "Confirms the scoped working root." },
+      { "id": "command-v-kar", "match": "^command -v kar$", "kind": "diagnostic", "reason": "Reports the kar executable used for dry-run verification." },
+      { "id": "command-v-rg", "match": "^command -v rg$", "kind": "diagnostic", "reason": "Reports ripgrep availability for targeted searches." },
+      { "id": "command-v-git", "match": "^command -v git$", "kind": "diagnostic", "reason": "Reports git availability for focused diff/status checks." },
+      { "id": "kar-help", "match": "^kar (--help|-h|help|help build)?$", "kind": "read", "reason": "Shows kar CLI help only." },
+      { "id": "kar-dry-run", "match": "^kar -c (kar-migration/config\\.ts|~/.config/kar-migration/config\\.ts) --dry-run$", "kind": "verify", "reason": "Builds Karabiner JSON to stdout without applying live output." },
+      { "id": "git-status-kx", "match": "^git status --short -- (kar-migration|kar-migration/config\\.ts|karabiner/karabiner\\.json|karabiner\\.edn)( (kar-migration|kar-migration/config\\.ts|karabiner/karabiner\\.json|karabiner\\.edn))*$", "kind": "read", "reason": "Reports focused Karabiner-related git state." },
+      { "id": "git-diff-config", "match": "^git diff( --check)? -- kar-migration/config\\.ts$", "kind": "read", "reason": "Reports focused config.ts diff/check only." },
+      { "id": "ls-kx-paths", "match": "^ls( -[A-Za-z0-9]+)? (kar-migration|kar-migration/config\\.ts|kar-migration/generated|kar-migration/reports|karabiner|karabiner/karabiner\\.json)$", "kind": "read", "reason": "Lists only scoped Karabiner paths." },
+      { "id": "find-kar-migration", "match": "^find kar-migration -maxdepth [123] -type f$", "kind": "read", "reason": "Finds files only under kar-migration with shallow depth." },
+      { "id": "rg-kx-scoped", "match": "^rg( -[A-Za-z0-9]+| --line-number| --fixed-strings| -F| -n| -C [0-9]+)* .{1,160} (kar-migration/config\\.ts|kar-migration/types/index\\.ts|kar-migration/generated/manifest\\.json|kar-migration/generated/profile\\.generated\\.ts|kar-migration/generated/raw-rules\\.generated\\.ts|kar-migration/generated/raw-simple\\.generated\\.ts|kar-migration/reports/final-verification\\.md|kar-migration/reports/source-coverage\\.md|karabiner/karabiner\\.json)$", "kind": "read", "reason": "Allows targeted searches only in scoped Karabiner files." }
+    ],
+    "denied": [
+      { "id": "kar-apply", "match": "^kar( build)? -c (?!.* --dry-run).*", "kind": "write", "confirmation": "confirm", "reason": "First-release kx may dry-run kar builds but must not write live Karabiner output." },
+      { "id": "kar-watch-init", "match": "^kar (watch|init)(\\s|$)", "kind": "write", "confirmation": "confirm", "reason": "kar watch/init are outside first-release kx." },
+      { "id": "goku-all", "match": "^goku(\\s|$)", "kind": "legacy-write", "confirmation": "confirm", "reason": "Goku and karabiner.edn are out of scope for first-release kx." },
+      { "id": "goku-env", "match": "^GOKU_EDN_CONFIG_FILE=.*", "kind": "legacy-write", "reason": "Goku config routing is out of scope for first-release kx." },
+      { "id": "shell-writes", "match": "^(rm|rmdir|mv|cp|install|touch|mkdir|chmod|chown|chflags|ln|unlink|truncate|dd|tee|sed|perl|python|python3|node|bun|pnpm|npm|npx|osascript|open|vim|vi|nano|code)(\\s|$)", "kind": "write", "confirmation": "confirm", "reason": "kx edits must use the scoped edit tool, not arbitrary shell write/code execution." },
+      { "id": "git-mutation", "match": "^git (checkout|restore|reset|clean|add|commit|stash|apply)(\\s|$)", "kind": "write", "confirmation": "confirm", "reason": "kx may inspect git state but must not mutate git state." },
+      { "id": "path-traversal", "match": ".*\\.\\.(\\/|$).*", "kind": "escape", "reason": "Path traversal is denied." }
+    ],
+    "writeCommands": [],
+    "destructiveCommands": [],
+    "sensitivePaths": [
+      { "path": "~/.config/karabiner/karabiner.json", "policy": "generated-readonly", "reason": "Generated live Karabiner output; never hand-edit." },
+      { "path": "~/.config/karabiner.edn", "policy": "legacy-deny-first-release", "reason": "Legacy Goku config is out of first-release kx scope." },
+      { "path": "~/.config/kar-migration/generated", "policy": "generated-readonly", "reason": "Generated TypeScript migration files; inspect only with targeted searches." },
+      { "path": "~/.config/kar-migration/migration-source", "policy": "legacy-readonly", "reason": "Migration source/baseline files are not edited by kx." }
+    ],
+    "nonInteractiveConfirmation": "block"
+  },
+  "install": { "conflictPolicy": "overwrite-managed-only", "linkStrategy": "copy", "shellIntegration": "ask" },
+  "smokeChecks": [
+    { "name": "policy allows dry-run", "command": "scripts/test-command-policy kx 'kar -c kar-migration/config.ts --dry-run'", "expectExit": 0 },
+    { "name": "policy denies apply", "command": "scripts/test-command-policy kx 'kar -c kar-migration/config.ts'", "expectExit": 1 },
+    { "name": "path policy allows config edit", "command": "scripts/test-path-policy kx edit kar-migration/config.ts", "expectExit": 0 },
+    { "name": "path policy denies generated edit", "command": "scripts/test-path-policy kx edit karabiner/karabiner.json", "expectExit": 1 }
+  ],
+  "compat": { "minPiVersion": "0.67.3", "testedPiVersions": ["0.67.3"], "requiredPiFlags": ["--tools", "--append-system-prompt", "--session-dir", "--no-session"], "optionalPiFlags": ["--no-context-files"] }
+}

@@ -1,0 +1,97 @@
+#!/bin/sh
+set -eu
+
+name=${1:-}
+mode_name=${2:-}
+[ -n "$name" ] && [ -n "$mode_name" ] || {
+  echo "usage: run-pisolate <name> <mode> [args...]" >&2
+  exit 2
+}
+shift 2
+
+PISOLATES_HOME=${PISOLATES_HOME:-$HOME/.pisolates}
+manifest="$PISOLATES_HOME/pisolates/$name/pisolate.json"
+if [ ! -f "$manifest" ]; then
+  here=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+  manifest="$here/$name/pisolate.json"
+fi
+[ -f "$manifest" ] || {
+  echo "pisolates: missing manifest for $name" >&2
+  exit 2
+}
+
+if [ -f "$PISOLATES_HOME/installer/json.mjs" ]; then
+  framework_root="$PISOLATES_HOME"
+else
+  framework_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+fi
+json="$framework_root/installer/json.mjs"
+
+case "${1:-}" in
+  --pisolates-plan)
+    exec "$json" plan "$manifest" "$mode_name"
+    ;;
+  --pisolates-policy)
+    exec "$json" summary-policy "$manifest"
+    ;;
+  --pisolates-doctor)
+    exec "$framework_root/scripts/doctor-local" "$name"
+    ;;
+  --pisolates-pi-help)
+    exec pi --help
+    ;;
+esac
+
+plan=$("$json" plan "$manifest" "$mode_name")
+cwd=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).cwd))')
+prompt=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).prompt))')
+tools=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).tools.join(",")))')
+session=$(printf '%s\n' "$plan" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>console.log(JSON.parse(s).session))')
+
+mkdir -p "$cwd" "$PISOLATES_HOME/pi-agent" "$PISOLATES_HOME/sessions/$name"
+policy_file="$PISOLATES_HOME/pisolates/$name/.policy-summary.md"
+mkdir -p "$(dirname "$policy_file")"
+{
+  printf '## Pisolates Policy Summary\n\n'
+  "$json" summary-policy "$manifest"
+} > "$policy_file"
+
+export PISOLATES_HOME
+export PISOLATE_NAME="$name"
+export PISOLATE_MODE="$mode_name"
+export PISOLATE_MANIFEST="$manifest"
+export PISOLATE_WORKING_ROOT="$cwd"
+export PI_CODING_AGENT_DIR="$PISOLATES_HOME/pi-agent/$name"
+export NO_COLOR="${NO_COLOR:-1}"
+export BIRD_TIMEOUT_MS="${BIRD_TIMEOUT_MS:-15000}"
+export BIRD_COOKIE_TIMEOUT_MS="${BIRD_COOKIE_TIMEOUT_MS:-1000}"
+export BIRD_QUOTE_DEPTH="${BIRD_QUOTE_DEPTH:-1}"
+unset BIRD_AUTH_TOKEN
+unset BIRD_CT0
+unset TWITTER_AUTH_TOKEN
+unset TWITTER_CT0
+
+if [ "$name" = "kx" ]; then
+  export KX_CONFIG_ROOT="$cwd"
+  export KX_KAR_CONFIG="$cwd/kar-migration/config.ts"
+  [ -f "$KX_KAR_CONFIG" ] || {
+    echo "pisolates: missing kx config: $KX_KAR_CONFIG" >&2
+    exit 2
+  }
+fi
+
+set -- "$@"
+cd "$cwd"
+
+pi_args="--no-extensions --no-skills --no-prompt-templates --no-themes --tools $tools --append-system-prompt $prompt --append-system-prompt $policy_file -e $PISOLATES_HOME/installer/pi-guard.ts"
+if pi --help | grep -q -- "--no-context-files"; then
+  pi_args="--no-context-files $pi_args"
+fi
+
+if [ "$session" = "ephemeral" ]; then
+  # shellcheck disable=SC2086
+  exec pi -p --no-session $pi_args "$@"
+fi
+
+# shellcheck disable=SC2086
+exec pi --session-dir "$PISOLATES_HOME/sessions/$name" $pi_args "$@"

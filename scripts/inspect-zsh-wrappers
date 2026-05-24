@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+root=${1:-$HOME/.config/zsh}
+rg -n '^[A-Za-z0-9_:-]+\(\)|^function [A-Za-z0-9_:-]+' "$root" 2>/dev/null || true

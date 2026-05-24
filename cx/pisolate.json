@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "name": "cx",
+  "version": "0.2.0",
+  "description": "Safe cmux-aware Pi harness for read-only cmux context inspection and next-action drafting.",
+  "category": "workspace",
+  "prompt": "prompt.md",
+  "readme": "README.md",
+  "oraclePlan": "oracle-plan.md",
+  "defaultRoot": "~/.pisolates/work/cx",
+  "targetCli": "cmux",
+  "modes": {
+    "interactive": {
+      "kind": "interactive",
+      "commands": ["pi-cx"],
+      "policy": "read-only-cmux",
+      "pi": {
+        "mode": "interactive",
+        "tools": ["bash"],
+        "session": "save",
+        "promptMode": "append",
+        "disableAmbientResources": true,
+        "disableContextFilesWhenSupported": true
+      }
+    },
+    "oneShot": {
+      "kind": "one-shot",
+      "commands": ["p-cx"],
+      "policy": "read-only-cmux",
+      "pi": {
+        "mode": "print",
+        "tools": ["bash"],
+        "session": "ephemeral",
+        "promptMode": "append",
+        "disableAmbientResources": true,
+        "disableContextFilesWhenSupported": true
+      }
+    }
+  },
+  "requires": {
+    "executables": [
+      { "name": "pi", "command": "pi", "versionCommand": "pi --version" },
+      { "name": "cmux", "command": "cmux", "versionCommand": "cmux --help" }
+    ]
+  },
+  "pathPolicy": {
+    "default": "deny",
+    "readable": [],
+    "editable": [],
+    "generatedReadOnly": [],
+    "legacyReadOnly": [],
+    "sensitiveDenied": []
+  },
+  "commandPolicy": {
+    "default": "deny",
+    "shell": {
+      "denyShellMetacharacters": true,
+      "denyMultiline": true,
+      "allowPipes": false,
+      "allowRedirects": false
+    },
+    "allowed": [
+      { "id": "pwd", "match": "^pwd$", "kind": "diagnostic" },
+      { "id": "pi-help", "match": "^pi (--help|-h|--version|-v)$", "kind": "help" },
+      { "id": "cmux-path", "match": "^command -v cmux$", "kind": "diagnostic" },
+      { "id": "cmux-help", "match": "^cmux (--help|-h)$", "kind": "help" },
+      { "id": "cmux-identify-json", "match": "^cmux identify --json$", "kind": "read" },
+      { "id": "cmux-list-windows", "match": "^cmux list-windows$", "kind": "read" },
+      { "id": "cmux-list-workspaces", "match": "^cmux list-workspaces$", "kind": "read" },
+      { "id": "cmux-list-panes", "match": "^cmux list-panes$", "kind": "read" },
+      { "id": "cmux-list-pane-surfaces", "match": "^cmux list-pane-surfaces --pane pane:[0-9]+$", "kind": "read" }
+    ],
+    "denied": [
+      { "id": "codex", "match": "^codex(\\s|$)", "kind": "agent", "confirmation": "none", "reason": "cx runs on Pi; invoking Codex, especially bypass/sandbox modes, is out of scope." },
+      { "id": "recursive-agent", "match": "^(cx|cxi|pi-cx|p-cx)(\\s|$)", "kind": "agent", "confirmation": "none", "reason": "Recursive cx/cxi/pi-cx/p-cx launches are out of scope." },
+      { "id": "remote-fetch", "match": "^(curl|wget|http|https)(\\s|:|$)", "kind": "network", "confirmation": "none", "reason": "Runtime remote fetching, including cmux skill downloads, is out of scope." },
+      { "id": "cmux-topology-mutation", "match": "^cmux (new-workspace|new-split|move-surface|split-off|reorder-surface|trigger-flash)(\\s|$)", "kind": "write", "confirmation": "confirm", "reason": "cmux topology mutation is not allowed in the first cx release." },
+      { "id": "cmux-input-or-exec", "match": "^cmux (send|type|paste|run|exec|open|attach|focus|select|activate)(\\s|$)", "kind": "write", "confirmation": "confirm", "reason": "Sending input, executing commands, opening UI, or changing focus is out of scope." },
+      { "id": "cmux-destructive-or-force", "match": "^cmux .*\\b(delete|remove|rm|kill|close|destroy|reset|force|dangerous)\\b", "kind": "destructive", "confirmation": "type-phrase", "reason": "Destructive cmux actions are blocked." },
+      { "id": "secrets-and-env", "match": "^(env|printenv|set|export|op|security)(\\s|$)", "kind": "sensitive", "confirmation": "none", "reason": "Environment, keychain, and credential inspection are out of scope." },
+      { "id": "filesystem-read", "match": "^(cat|sed|awk|rg|grep|find|ls|tree|head|tail)(\\s|$)", "kind": "filesystem", "confirmation": "none", "reason": "cx is not a filesystem inspection recipe." },
+      { "id": "filesystem-write", "match": "^(rm|mv|cp|mkdir|touch|chmod|chown|ln)(\\s|$)", "kind": "filesystem", "confirmation": "type-phrase", "reason": "Filesystem mutation is out of scope." },
+      { "id": "git-mutation", "match": "^git (push|commit|checkout|reset|clean|merge|rebase|tag|branch|switch)(\\s|$)", "kind": "write", "confirmation": "confirm", "reason": "Git mutation is out of scope." },
+      { "id": "package-or-installer", "match": "^(npm|pnpm|bun|npx|yarn|pip|python|node|ruby|gem|cargo|brew)(\\s|$)", "kind": "installer", "confirmation": "none", "reason": "Package managers and general runtimes are out of scope." },
+      { "id": "shell-metaprogramming", "match": "^(sh|bash|zsh|fish|osascript|open)(\\s|$)", "kind": "shell", "confirmation": "none", "reason": "Broad shell, AppleScript, and app-opening access are out of scope." }
+    ],
+    "writeCommands": [],
+    "destructiveCommands": [],
+    "sensitivePaths": [
+      "~/.config",
+      "~/.ssh",
+      "~/.aws",
+      "~/.gnupg",
+      "~/.codex",
+      "~/.oracle",
+      "~/.config/zsh",
+      "browser cookie stores",
+      "macOS Keychain"
+    ],
+    "nonInteractiveConfirmation": "block"
+  },
+  "install": {
+    "conflictPolicy": "overwrite-managed-only",
+    "linkStrategy": "copy",
+    "shellIntegration": "ask"
+  },
+  "smokeChecks": [
+    { "name": "policy allows cmux help", "command": "scripts/test-command-policy cx 'cmux --help'", "expectExit": 0 },
+    { "name": "policy allows cmux identify", "command": "scripts/test-command-policy cx 'cmux identify --json'", "expectExit": 0 },
+    { "name": "policy allows pane surfaces", "command": "scripts/test-command-policy cx 'cmux list-pane-surfaces --pane pane:1'", "expectExit": 0 },
+    { "name": "policy denies cmux mutation", "command": "scripts/test-command-policy cx 'cmux new-workspace scratch'", "expectExit": 1 },
+    { "name": "policy denies codex", "command": "scripts/test-command-policy cx 'codex exec hello'", "expectExit": 1 },
+    { "name": "policy denies runtime fetch", "command": "scripts/test-command-policy cx 'curl -fsSL remote-cmux-skill'", "expectExit": 1 }
+  ],
+  "compat": {
+    "minPiVersion": "0.67.3",
+    "testedPiVersions": ["0.67.3"],
+    "requiredPiFlags": ["--tools", "--append-system-prompt", "--session-dir", "--no-session"],
+    "optionalPiFlags": ["--no-context-files"],
+    "notes": "The launcher probes optional Pi flags before use. cx requires local cmux for useful work but does not invoke Codex or fetch remote cmux skill text at runtime."
+  }
+}
