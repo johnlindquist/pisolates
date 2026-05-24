@@ -1,27 +1,8 @@
 # bm
 
-`bm` is a local-only, read-only Basic Memory pisolate for inspecting installation, help, sync status, and local consistency diagnostics. It installs:
+`bm` is a full-access Basic Memory pisolate. It installs:
 
-- `pi-bm` for interactive read/status inspection.
-- `p-bm` for one-shot read/status inspection.
+- `pi-bm` for interactive Basic Memory work.
+- `p-bm` for one-shot Basic Memory work.
 
-Allowed first-release commands:
-
-- `bm --help`, `bm --version`
-- `bm status --help`, `bm status --local`, `bm status --local --json`
-- `bm doctor --help`, `bm doctor --local`
-- `bm project --help`
-- `bm tool --help`
-- `command -v bm`, `pwd`
-
-Blocked:
-
-- Note reads/searches through `bm tool`
-- Note writes/edits/imports
-- Reset/reindex/format/update
-- MCP server startup
-- Cloud access or cloud routing
-- Project list/ls/info and all project mutation
-- Direct filesystem reads of Basic Memory data/config
-
-This recipe does not install Basic Memory and does not copy, symlink, or print Basic Memory config, projects, cloud credentials, or Pi auth.
+The recipe defaults to allowing every `bm` command, including note search/read/context commands and write/destructive commands. Pisolates still provides a stable launcher, isolated working directory, isolated Pi session state, and recipe-specific prompt, but it is not a privacy sandbox.

@@ -1,46 +1,8 @@
 # zx
 
-`zx` is a scoped Pi harness for focused zsh wrapper/config work under `~/.config`. It installs:
+`zx` is a full-access zsh configuration pisolate. It installs:
 
-- `pi-zx` for interactive zsh wrapper/config work.
-- `p-zx` for one-shot zsh wrapper/config work.
+- `pi-zx` for interactive zsh work.
+- `p-zx` for one-shot zsh work.
 
-## First-Release Scope
-
-`zx` may edit only:
-
-- `zsh/conf.d/49-codex-bare-dsl.zsh`
-- `zsh/tests/49-codex-bare-dsl-zx.zsh`
-
-It may inspect focused wrapper/test context and run focused syntax/test checks.
-
-## Allowed
-
-- Focused `git status`
-- Focused `git diff` / `git diff --check`
-- Exact reads of focused context files
-- Focused `zsh -n`
-- `zsh -f zsh/tests/49-codex-bare-dsl-zx.zsh`
-- Scoped edit of the two target files
-
-## Blocked
-
-- Edits to `.zshrc`, `local.zsh`, `00-secrets.zsh`, `codex-env.zsh`
-- Edits to unrelated dirty zsh files
-- Edits to startup regression tests
-- Package managers and installers
-- Real agent execution from tests
-- Git mutation
-- Broad startup rewrites
-- Shell history/auth/token reads
-
-## Verification
-
-A successful run reports:
-
-- Changed files, limited to the two editable paths
-- Focused `zsh -n` results
-- Focused zx zsh test result
-- `git diff --check` result
-- Focused diff
-- Confirmation that unrelated dirty zsh files were not touched
+The recipe defaults to allowing every CLI command and arbitrary edits inside the working root. That includes shell commands, package managers, git commands, agent commands, and edits beyond the original wrapper files. Pisolates still provides a stable launcher, isolated working directory, isolated Pi session state, and recipe-specific prompt, but it is not a privacy sandbox.

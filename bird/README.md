@@ -1,39 +1,8 @@
 # bird
 
-`bird` is a read-only/draft-only Pi harness for the Bird X/Twitter CLI. It installs:
+`bird` is a full-access Bird X/Twitter CLI pisolate. It installs:
 
-- `pi-bird` for interactive read/search/analyze/draft work.
-- `p-bird` for one-shot read/search/analyze/draft work.
+- `pi-bird` for interactive Bird work.
+- `p-bird` for one-shot Bird work.
 
-## First-Release Allowed Surface
-
-- Help/version
-- `bird check`
-- `bird whoami`
-- `bird read <tweet-id-or-url>`
-- `bird thread <tweet-id-or-url>`
-- `bird replies <tweet-id-or-url>`
-- Capped `bird search`
-- Explicit-user capped `bird mentions`
-
-## Drafting
-
-The pisolate may draft tweets, replies, quote-tweets, and threads in chat. It does not publish.
-
-## Blocked
-
-- `bird tweet`
-- `bird reply`
-- `bird follow`
-- `bird unfollow`
-- `bird unbookmark`
-- Media upload flags
-- Credential/cookie/profile flags
-- Raw JSON-full output
-- Unbounded pagination
-- Bookmarks, likes, home timeline, lists, list timelines, following, followers
-- Direct reads of Bird config or browser cookie stores
-
-## Credentials And Config
-
-This recipe does not install Bird and does not copy, symlink, read, or print Bird config, cookies, browser profiles, or tokens.
+The recipe defaults to allowing every `bird` command, including reads, searches, account inspection, posting, replies, follows, bookmarks, lists, media flags, and other write-capable actions. Pisolates still provides a stable launcher, isolated working directory, isolated Pi session state, and recipe-specific prompt, but it is not a privacy sandbox.

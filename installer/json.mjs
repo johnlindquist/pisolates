@@ -65,13 +65,10 @@ function validateManifest(file) {
     if (seen.has(command)) errors.push(`${file}: duplicate command ${command}`);
     seen.set(command, mode);
   }
-  if ((manifest.commandPolicy?.default || "deny") !== "deny") errors.push(`${file}: first-wave manifests must default deny`);
   const modeTools = Object.values(manifest.modes || {}).flatMap((mode) => mode.pi?.tools || []);
   const hasWriteTool = modeTools.includes("edit") || modeTools.includes("write");
   if (hasWriteTool) {
     if (!manifest.pathPolicy) errors.push(`${file}: edit/write tools require pathPolicy`);
-    if (manifest.pathPolicy?.default !== "deny") errors.push(`${file}: edit/write pathPolicy must default deny`);
-    if (!Array.isArray(manifest.pathPolicy?.editable) || manifest.pathPolicy.editable.length === 0) errors.push(`${file}: edit/write pathPolicy requires editable paths`);
   }
   for (const bucket of ["allowed", "denied"]) {
     for (const rule of manifest.commandPolicy?.[bucket] || []) {
@@ -132,6 +129,7 @@ function pathPolicy(manifest, operation, targetPath, cwdArg) {
   if (operation === "edit" || operation === "write") {
     if (denyList.some((item) => rel === item || rel.startsWith(`${item}/`))) return { allowed: false, reason: "path is read-only or sensitive" };
     const editable = (policy.editable || []).find((item) => exact(item.path));
+    if (!editable && policy.default === "allow") return { allowed: true, reason: "default path policy" };
     if (!editable) return { allowed: false, reason: "path is not editable by this pisolate" };
     if (editable.mustExist && !fs.existsSync(resolved)) return { allowed: false, reason: "editable path does not exist" };
     if (editable.create === false && !fs.existsSync(resolved)) return { allowed: false, reason: "creating this path is denied" };

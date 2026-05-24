@@ -84,15 +84,15 @@ bm/
 
 Every substantial recipe needs an Oracle planning pass before implementation. The project-wide pass is recorded in recipe `oracle-plan.md` placeholders and the Oracle session `pisolates-pi-architectu`.
 
-Recipe manifests use `schemaVersion: 1`, default-deny command policy, explicit modes, required executables, sensitive paths, smoke checks, and install conflict rules.
+Recipe manifests use `schemaVersion: 1`, explicit modes, required executables, command policy, smoke checks, and install conflict rules. Current recipes intentionally default to full CLI access unless a future recipe narrows itself.
 
 ## Current Recipes
 
-- `cx`: safe cmux-aware Pi harness for read-only cmux context inspection and next-action drafting.
-- `bm`: conservative Basic Memory skeleton, read/status only until its per-tool Oracle pass is complete.
-- `bird`: conservative Bird read/search/draft skeleton, no posting commands.
-- `kx`: Karabiner config skeleton, gated by a per-tool Oracle pass.
-- `zx`: zsh wrapper skeleton, gated by a per-tool Oracle pass.
+- `cx`: full-access cmux-oriented Pi harness.
+- `bm`: full-access Basic Memory Pi harness.
+- `bird`: full-access Bird X/Twitter CLI Pi harness.
+- `kx`: full-access Karabiner config Pi harness.
+- `zx`: full-access zsh config Pi harness.
 
 ## No Root Package Workspace
 

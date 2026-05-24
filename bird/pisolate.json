@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "name": "bird",
-  "version": "0.1.0",
-  "description": "Read-only Pi harness for Bird X/Twitter CLI reading, search, analysis, and drafting.",
+  "version": "0.2.0",
+  "description": "Full-access Pi harness for Bird X/Twitter CLI reading, search, analysis, and drafting.",
   "category": "social",
   "prompt": "prompt.md",
   "readme": "README.md",
@@ -17,11 +17,15 @@
   "modes": {
     "interactive": {
       "kind": "interactive",
-      "commands": ["pi-bird"],
-      "policy": "read-only",
+      "commands": [
+        "pi-bird"
+      ],
+      "policy": "full-cli-access",
       "pi": {
         "mode": "interactive",
-        "tools": ["bash"],
+        "tools": [
+          "bash"
+        ],
         "session": "save",
         "promptMode": "append",
         "disableAmbientResources": true,
@@ -30,11 +34,15 @@
     },
     "oneShot": {
       "kind": "one-shot",
-      "commands": ["p-bird"],
-      "policy": "read-only",
+      "commands": [
+        "p-bird"
+      ],
+      "policy": "full-cli-access",
       "pi": {
         "mode": "print",
-        "tools": ["bash"],
+        "tools": [
+          "bash"
+        ],
         "session": "ephemeral",
         "promptMode": "append",
         "disableAmbientResources": true,
@@ -44,60 +52,47 @@
   },
   "requires": {
     "executables": [
-      { "name": "pi", "command": "pi", "versionCommand": "pi --version" },
-      { "name": "bird", "command": "bird", "versionCommand": "bird --version", "installHint": "Install Bird CLI first." }
+      {
+        "name": "pi",
+        "command": "pi",
+        "versionCommand": "pi --version"
+      },
+      {
+        "name": "bird",
+        "command": "bird",
+        "versionCommand": "bird --version",
+        "installHint": "Install Bird CLI first."
+      }
     ],
     "paths": [
-      { "path": "~/.config/bird/config.json5", "required": false, "description": "Bird global config; may reference browser cookie extraction." }
+      {
+        "path": "~/.config/bird/config.json5",
+        "required": false,
+        "description": "Bird global config; may reference browser cookie extraction."
+      }
     ]
   },
   "commandPolicy": {
-    "default": "deny",
+    "default": "allow",
     "shell": {
-      "denyShellMetacharacters": true,
-      "denyMultiline": true,
-      "allowPipes": false,
-      "allowRedirects": false
+      "denyShellMetacharacters": false,
+      "denyMultiline": false,
+      "allowPipes": true,
+      "allowRedirects": true
     },
     "allowed": [
-      { "id": "bird-help-root", "match": "^bird (--help|-h|--version|-V)$", "kind": "help" },
-      { "id": "bird-help-safe-subcommand", "match": "^bird (help|help (read|replies|thread|search|mentions|whoami|check)|(?:read|replies|thread|search|mentions|whoami|check) --help)$", "kind": "help" },
-      { "id": "bird-check", "match": "^bird check$", "kind": "diagnostic" },
-      { "id": "bird-whoami", "match": "^bird whoami$", "kind": "sensitive-read" },
-      { "id": "bird-read-one", "match": "^bird read [^\\s-][^\\s]*( --json)?$", "kind": "read" },
-      { "id": "bird-thread-one", "match": "^bird thread [^\\s-][^\\s]*( --json)?$", "kind": "read" },
-      { "id": "bird-replies-one", "match": "^bird replies [^\\s-][^\\s]*( --json)?$", "kind": "read" },
-      { "id": "bird-search-capped", "match": "^bird search( (-n|--count) ([1-9]|1[0-9]|20))?( --json)? [^\\s-].{0,200}$", "kind": "read" },
-      { "id": "bird-mentions-explicit-user-capped", "match": "^bird mentions (-u|--user) @?[A-Za-z0-9_]{1,15}( (-n|--count) ([1-9]|1[0-9]|20))?( --json)?$", "kind": "sensitive-read" },
-      { "id": "which-bird", "match": "^(command -v bird|which bird)$", "kind": "diagnostic" },
-      { "id": "pwd", "match": "^pwd$", "kind": "diagnostic" }
+      {
+        "id": "all-commands",
+        "match": "^.*$",
+        "kind": "full-access",
+        "reason": "Full CLI access is the default for this pisolate."
+      }
     ],
-    "denied": [
-      { "id": "bird-inline-credential-flags", "match": "^bird\\s+.*--(auth-token|ct0)(\\s|=|$)", "kind": "credential", "reason": "Inline Twitter/X cookie credentials must never be entered, logged, or exposed through the pisolate." },
-      { "id": "bird-cookie-source-overrides", "match": "^bird\\s+.*--(chrome-profile|chrome-profile-dir|firefox-profile|cookie-source|cookie-timeout)(\\s|=|$)", "kind": "credential", "reason": "Browser profile and cookie-source overrides can expose credential locations or trigger direct cookie extraction outside the recipe contract." },
-      { "id": "bird-media-flags", "match": "^bird\\s+.*--(media|alt)(\\s|=|$)", "kind": "write", "reason": "Media and alt-text flags are only meaningful for posting, which is outside read-only/draft mode." },
-      { "id": "bird-raw-api-json", "match": "^bird\\s+.*--json-full(\\s|$)", "kind": "privacy", "reason": "Raw API payloads can include private metadata, cursors, and credential-adjacent account details." },
-      { "id": "bird-unbounded-pagination", "match": "^bird\\s+.*--(all|cursor|max-pages)(\\s|=|$)", "kind": "privacy", "reason": "Unbounded or cursor-based pagination can scrape large private/social timelines and is deferred." },
-      { "id": "bird-shorthand-read", "match": "^bird (https?://[^\\s]+|[0-9]{6,})( --json)?$", "kind": "read", "reason": "Use explicit bird read so command intent is auditable." },
-      { "id": "bird-query-ids", "match": "^bird query-ids(\\s|$)", "kind": "diagnostic", "reason": "query-ids may refresh local GraphQL cache state and is not needed for the read-only/draft slice." },
-      { "id": "bird-account-private-reads", "match": "^bird (home|bookmarks|likes|lists|list-timeline|following|followers)(\\s|$)", "kind": "sensitive-read", "reason": "Account-private timelines, bookmarks, likes, lists, and social graph reads are deferred until a separate sensitive-read contract and tests exist." },
-      { "id": "bird-current-user-mentions-default", "match": "^bird mentions(\\s*)?$", "kind": "sensitive-read", "reason": "Default mentions target the current account; first release requires an explicit --user handle." },
-      { "id": "bird-profile-reads-deferred", "match": "^bird (about|user-tweets)(\\s|$)", "kind": "read", "reason": "Profile read commands need captured subcommand help and count-capped policy before first release." },
-      { "id": "bird-news-trending-deferred", "match": "^bird (news|trending)(\\s|$)", "kind": "read", "reason": "Explore/news/trending commands are not part of the first read/search/draft proof slice." },
-      { "id": "bird-tweet", "match": "^bird tweet(\\s|$)", "kind": "write", "confirmation": "confirm", "reason": "Posts publicly from the authenticated account." },
-      { "id": "bird-reply", "match": "^bird reply(\\s|$)", "kind": "write", "confirmation": "confirm", "reason": "Posts a public reply from the authenticated account." },
-      { "id": "bird-follow", "match": "^bird follow(\\s|$)", "kind": "write", "confirmation": "confirm", "reason": "Changes the authenticated account's social graph." },
-      { "id": "bird-unfollow", "match": "^bird unfollow(\\s|$)", "kind": "write", "confirmation": "confirm", "reason": "Changes the authenticated account's social graph." },
-      { "id": "bird-unbookmark", "match": "^bird unbookmark(\\s|$)", "kind": "write", "confirmation": "confirm", "reason": "Removes saved bookmarks from the authenticated account." }
-    ],
+    "denied": [],
     "writeCommands": [],
     "destructiveCommands": [],
-    "sensitivePaths": [
-      { "path": "~/.config/bird/config.json5", "policy": "read-block", "reason": "May contain or reference credential/cookie settings." },
-      { "path": "./.birdrc.json5", "policy": "read-block", "reason": "Project-local Bird config may override credential behavior." },
-      { "path": "browser cookie stores", "policy": "document-only", "reason": "Bird can extract cookies from browser profiles." }
-    ],
-    "nonInteractiveConfirmation": "block"
+    "sensitivePaths": [],
+    "nonInteractiveConfirmation": "allow"
   },
   "install": {
     "conflictPolicy": "overwrite-managed-only",
@@ -105,18 +100,31 @@
     "shellIntegration": "ask"
   },
   "smokeChecks": [
-    { "name": "bird help", "command": "bird --help", "expectExit": 0, "expectStdout": "fast X CLI" },
-    { "name": "policy allows help", "command": "scripts/test-command-policy bird 'bird --help'", "expectExit": 0 },
-    { "name": "policy allows capped search", "command": "scripts/test-command-policy bird 'bird search -n 10 from:example'", "expectExit": 0 },
-    { "name": "policy denies tweet", "command": "scripts/test-command-policy bird 'bird tweet hello'", "expectExit": 1 },
-    { "name": "policy denies credential flags", "command": "scripts/test-command-policy bird 'bird read --auth-token fake 1234567890123456789'", "expectExit": 1 },
-    { "name": "policy denies private account reads", "command": "scripts/test-command-policy bird 'bird bookmarks -n 1'", "expectExit": 1 }
+    {
+      "name": "policy allows target command",
+      "command": "scripts/test-command-policy bird 'bird tweet hello'",
+      "expectExit": 0
+    },
+    {
+      "name": "policy allows shell chaining",
+      "command": "scripts/test-command-policy bird 'bird tweet hello && pwd'",
+      "expectExit": 0
+    }
   ],
   "compat": {
     "minPiVersion": "0.67.3",
-    "testedPiVersions": ["0.67.3"],
-    "requiredPiFlags": ["--tools", "--append-system-prompt", "--session-dir", "--no-session"],
-    "optionalPiFlags": ["--no-context-files"],
-    "notes": "Substantial bird behavior remains gated by a bird-specific Oracle pass."
+    "testedPiVersions": [
+      "0.67.3"
+    ],
+    "requiredPiFlags": [
+      "--tools",
+      "--append-system-prompt",
+      "--session-dir",
+      "--no-session"
+    ],
+    "optionalPiFlags": [
+      "--no-context-files"
+    ],
+    "notes": "This recipe intentionally defaults to full target-CLI access. Pisolates still provides isolated launcher/session/prompt structure, but command use is not curated."
   }
 }

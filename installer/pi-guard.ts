@@ -62,6 +62,7 @@ function evaluatePath(operation: "read" | "edit" | "write", targetPath: string) 
   if (operation === "edit" || operation === "write") {
     if (denyList.some((item) => rel === item || rel.startsWith(`${item}/`))) return { allowed: false, reason: "path is read-only or sensitive" };
     const editable = (policy.editable || []).find((item: any) => exact(item.path));
+    if (!editable && policy.default === "allow") return { allowed: true, reason: "default path policy" };
     if (!editable) return { allowed: false, reason: "path is not editable by this pisolate" };
     if (editable.mustExist && !fs.existsSync(resolved)) return { allowed: false, reason: "editable path does not exist" };
     if (editable.create === false && !fs.existsSync(resolved)) return { allowed: false, reason: "creating this path is denied" };
